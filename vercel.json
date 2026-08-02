@@ -1,7 +1,17 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm install --legacy-peer-deps && npx vite build",
+  "outputDirectory": "dist",
   "framework": "vite",
-  "installCommand": "cd web && bun install",
-  "buildCommand": "cd web && bun run build",
-  "outputDirectory": "web/dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/((?!api|v1|health).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
 }

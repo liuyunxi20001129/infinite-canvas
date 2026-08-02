@@ -2,6 +2,23 @@ import { useMemo } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nanoid } from "nanoid";
+import { API_BASE_URL, getUserToken } from "@/lib/api-config";
+
+// ====== 商用改造：锁定 API 配置 ======
+// baseUrl 固定为后端代理地址，apiKey 使用用户 token 动态注入
+// 用户不能修改这些值
+const LOCKED_BASE_URL = API_BASE_URL || "";  // 空 = 同域
+const LOCKED_API_FORMAT: ApiCallFormat = "openai";
+
+/** 获取当前用户 token（用于 API 认证，替代 apiKey） */
+export function getLockedApiKey(): string {
+    return getUserToken();
+}
+
+/** 获取锁定的 baseUrl */
+export function getLockedBaseUrl(): string {
+    return LOCKED_BASE_URL;
+}
 
 export type ApiCallFormat = "openai" | "gemini" | "ark";
 export type ModelCapability = "image" | "video" | "text" | "audio";
@@ -66,18 +83,19 @@ const OPENAI_BASE_URL = "https://api.openai.com";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
 const ARK_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3";
 
+// 商用改造：默认配置使用锁定的代理地址
 export const defaultConfig: AiConfig = {
     channelMode: "local",
-    baseUrl: OPENAI_BASE_URL,
-    apiKey: "",
-    apiFormat: "openai",
+    baseUrl: LOCKED_BASE_URL,
+    apiKey: "",  // 实际使用 getLockedApiKey() 动态获取用户 token
+    apiFormat: LOCKED_API_FORMAT,
     channels: [
         {
             id: "default",
             name: "默认渠道",
-            baseUrl: OPENAI_BASE_URL,
+            baseUrl: LOCKED_BASE_URL,
             apiKey: "",
-            apiFormat: "openai",
+            apiFormat: LOCKED_API_FORMAT,
             models: [
                 { name: "gpt-image-2", capability: "image" },
                 { name: "grok-imagine-video", capability: "video" },
@@ -179,9 +197,10 @@ export function resolveModelScript(config: AiConfig, value: string) {
     return findChannelModel(config, value)?.model.script?.trim() || "";
 }
 
+// 商用改造：用用户 token 代替 apiKey 检查
 function isAiConfigReady(config: AiConfig, model: string) {
     const channel = resolveModelChannel(config, model);
-    return Boolean(model.trim() && channel.baseUrl.trim() && channel.apiKey.trim());
+    return Boolean(model.trim() && channel.baseUrl.trim() && getLockedApiKey().trim());
 }
 
 export const useConfigStore = create<ConfigStore>()(
@@ -227,7 +246,11 @@ export const useConfigStore = create<ConfigStore>()(
                     webdav: { ...defaultWebdavSyncConfig, ...persistedWebdav },
                     config: {
                         ...config,
+                        // 商用改造：强制锁定 API 配置
                         channelMode: "local",
+                        baseUrl: LOCKED_BASE_URL,
+                        apiKey: "",  // 动态从 getLockedApiKey() 获取
+                        apiFormat: LOCKED_API_FORMAT,
                         apiFormat: normalizeApiFormat(config.apiFormat),
                         channels,
                         models,
@@ -277,9 +300,10 @@ export function createModelChannel(channel?: Partial<ModelChannel>): ModelChanne
     return {
         id: channel?.id?.trim() || nanoid(),
         name: channel?.name?.trim() || "新渠道",
-        baseUrl: channel?.baseUrl?.trim() || defaultBaseUrlForApiFormat(apiFormat),
-        apiKey: channel?.apiKey || "",
-        apiFormat,
+        // 商用改造：强制使用锁定的代理地址
+        baseUrl: LOCKED_BASE_URL,
+        apiKey: "",  // 不再存储用户 apiKey
+        apiFormat: LOCKED_API_FORMAT,
         models: normalizeChannelModels(channel?.models),
     };
 }
@@ -337,9 +361,10 @@ export function resolveModelRequestConfig(config: AiConfig, value: string) {
     return {
         ...config,
         model: modelOptionName(value || config.model),
-        baseUrl: channel.baseUrl,
-        apiKey: channel.apiKey,
-        apiFormat: channel.apiFormat,
+        // 商用改造：使用锁定的代理地址和用户 token
+        baseUrl: LOCKED_BASE_URL,
+        apiKey: getLockedApiKey(),
+        apiFormat: LOCKED_API_FORMAT,
     };
 }
 
@@ -348,6 +373,10 @@ function normalizeChannels(config: AiConfig) {
     const channels = persistedChannels.map((channel, index) =>
         createModelChannel({
             ...channel,
+            // 商用改造：强制锁定
+            baseUrl: LOCKED_BASE_URL,
+            apiKey: "",
+            apiFormat: LOCKED_API_FORMAT,
             id: channel.id || (index === 0 ? "default" : `channel-${index + 1}`),
             name: channel.name || (index === 0 ? "默认渠道" : `渠道 ${index + 1}`),
             models: normalizeChannelModels(channel.models),
@@ -358,9 +387,9 @@ function normalizeChannels(config: AiConfig) {
             createModelChannel({
                 id: "default",
                 name: "默认渠道",
-                baseUrl: config.baseUrl || defaultConfig.baseUrl,
-                apiKey: config.apiKey || "",
-                apiFormat: config.apiFormat || defaultConfig.apiFormat,
+                baseUrl: LOCKED_BASE_URL,
+                apiKey: "",
+                apiFormat: LOCKED_API_FORMAT,
                 models: normalizeChannelModels([config.model, config.imageModel, config.videoModel, config.textModel, config.audioModel].map(modelOptionName)),
             }),
         );

@@ -1,10 +1,40 @@
+# Render 后端部署配置
+# 文档: https://render.com/docs/blueprint-spec
 services:
   - type: web
-    name: infinite-canvas
-    runtime: docker
+    name: infinite-canvas-api
+    runtime: node
     plan: free
-    autoDeployTrigger: off
-    healthCheckPath: /
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node src/index.js
+    healthCheckPath: /health
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: PORT
-        value: 3000
+        value: 8000
+      - key: DATABASE_URL
+        sync: false  # 在 Render 控制台手动填写 Supabase 连接串
+      - key: DATABASE_SSL
+        value: "true"
+      - key: UPSTREAM_BASE_URL
+        sync: false  # 上游 API 地址
+      - key: UPSTREAM_API_KEY
+        sync: false  # 上游 API 密钥
+      - key: JWT_SECRET
+        sync: false  # JWT 密钥（至少 32 字符）
+      - key: CORS_ORIGINS
+        sync: false  # Vercel 前端域名，如 https://your-app.vercel.app
+      - key: FREE_CREDIT
+        value: "1000"
+      - key: PRICE_IMAGE
+        value: "5"
+      - key: PRICE_VIDEO
+        value: "50"
+      - key: PRICE_TEXT
+        value: "1"
+      - key: PRICE_AUDIO
+        value: "3"
+      - key: ADMIN_PASSWORD
+        sync: false

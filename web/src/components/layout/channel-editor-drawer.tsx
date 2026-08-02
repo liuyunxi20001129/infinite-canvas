@@ -77,16 +77,13 @@ export function ChannelEditorDrawer({ open, channel, onSave, onClose }: { open: 
                 </label>
                 <label className="block">
                     <span className="mb-1 block text-sm font-medium">协议</span>
-                    <Select className="w-full" value={draft.apiFormat} options={apiFormatOptions} onChange={changeApiFormat} />
+                    <Select className="w-full" value={draft.apiFormat} options={apiFormatOptions} onChange={changeApiFormat} disabled />
                 </label>
-                <label className="block md:col-span-2">
+                <div className="block md:col-span-2">
                     <span className="mb-1 block text-sm font-medium">接口地址</span>
-                    <Input value={draft.baseUrl} onChange={(event) => patch({ baseUrl: event.target.value })} placeholder="https://api.example.com" />
-                </label>
-                <label className="block md:col-span-2">
-                    <span className="mb-1 block text-sm font-medium">API Key</span>
-                    <Input.Password value={draft.apiKey} onChange={(event) => patch({ apiKey: event.target.value })} placeholder="sk-..." />
-                </label>
+                    <Input value={draft.baseUrl} disabled placeholder="由平台统一提供" />
+                </div>
+                {/* 商用改造：移除 API Key 输入框，用户无需填写 */}
             </div>
 
             <div className="mt-6 mb-3 flex flex-wrap items-center justify-between gap-2">
