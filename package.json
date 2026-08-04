@@ -1,0 +1,9 @@
+{
+  "name": "infinite-canvas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Infinite Canvas backend entry. Delegates to ./server so the repo can be imported and run on Glitch/Replit with one click, while leaving Render (rootDir: server) and Vercel (rootDir: web) deployments unaffected.",
+  "scripts": {
+    "start": "npm --prefix server install && node server/src/index.js"
+  }
+}
